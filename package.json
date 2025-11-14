@@ -1,0 +1,50 @@
+{
+  "name": "speak-mintlify",
+  "version": "1.0.0",
+  "description": "CLI tool to generate TTS audio for documentation using Fish Audio",
+  "main": "dist/cli.js",
+  "type": "module",
+  "bin": {
+    "speak-mintlify": "./dist/cli.js"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twangodev/speak-mintlify.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/twangodev/speak-mintlify/issues"
+  },
+  "homepage": "https://github.com/twangodev/speak-mintlify#readme",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vercel/ncc": "^0.38.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.932.0",
+    "axios": "^1.13.2",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "gray-matter": "^4.0.3",
+    "ora": "^9.0.0",
+    "p-retry": "^7.1.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5"
+  }
+}
