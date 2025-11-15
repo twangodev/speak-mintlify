@@ -170,19 +170,24 @@ export async function generateCommand(
           continue;
         }
 
-        // Generate TTS for all voices
-        fileSpinner.text = `Generating TTS for ${chalk.cyan(file)} (${config.voiceIds.length} voices)...`;
-        const audioBuffers = await fishClient.generateMultipleVoices(
-          cleanText,
-          config.voiceIds
-        );
+        // Generate TTS for each voice with progress
+        const audioBuffers = new Map<string, Buffer>();
+        const audioUrls = new Map<string, string>();
 
-        // Upload to S3
-        fileSpinner.text = `Uploading audio for ${chalk.cyan(file)}...`;
-        const audioUrls = await s3Uploader.uploadMultipleVoices(
-          audioBuffers,
-          file
-        );
+        for (let i = 0; i < config.voiceIds.length; i++) {
+          const voiceId = config.voiceIds[i]!;
+          const voiceName = config.voiceNames[i] || `Voice ${i + 1}`;
+
+          // Generate TTS
+          fileSpinner.text = `Generating TTS for ${chalk.cyan(file)} (${chalk.yellow(voiceName)})...`;
+          const buffer = await fishClient.generateTTS(cleanText, voiceId);
+          audioBuffers.set(voiceId, buffer);
+
+          // Upload to S3
+          fileSpinner.text = `Uploading ${chalk.yellow(voiceName)} to S3...`;
+          const url = await s3Uploader.uploadAudio(buffer, file, voiceId);
+          audioUrls.set(voiceId, url);
+        }
 
         // Create voice array with URLs
         const voices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
@@ -202,7 +207,7 @@ export async function generateCommand(
         await writeFile(filePath, updatedContent);
 
         fileSpinner.succeed(
-          chalk.green(`✓ Generated TTS for ${chalk.cyan(file)}`)
+          chalk.green(`Generated TTS for ${chalk.cyan(file)}`)
         );
 
         results.push({
@@ -229,10 +234,10 @@ export async function generateCommand(
     const skipped = results.filter((r) => r.skipped).length;
     const failed = results.filter((r) => !r.success).length;
 
-    console.log(chalk.green(`  ✓ Successfully processed: ${successful}`));
-    console.log(chalk.gray(`  ⊘ Skipped: ${skipped}`));
+    console.log(chalk.green(`  Successfully processed: ${successful}`));
+    console.log(chalk.gray(`  Skipped: ${skipped}`));
     if (failed > 0) {
-      console.log(chalk.red(`  ✗ Failed: ${failed}`));
+      console.log(chalk.red(`  Failed: ${failed}`));
     }
 
     if (config.verbose) {
