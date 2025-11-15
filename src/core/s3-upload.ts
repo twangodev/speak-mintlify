@@ -4,7 +4,6 @@
  */
 
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import path from 'path';
 import type { S3Config } from '../types/index.js';
 
 /**
@@ -13,11 +12,9 @@ import type { S3Config } from '../types/index.js';
 export class S3Uploader {
   private client: S3Client;
   private config: S3Config;
-  private branch: string;
 
-  constructor(config: S3Config, branch: string = 'main') {
+  constructor(config: S3Config) {
     this.config = config;
-    this.branch = branch;
 
     // Create S3 client with optional custom endpoint (for R2, MinIO, etc.)
     this.client = new S3Client({
@@ -32,7 +29,6 @@ export class S3Uploader {
 
   /**
    * Generate S3 key (path) for audio file
-   * Includes branch name for CI/CD multi-branch support
    * @param filePath - Original MDX file path
    * @param voiceId - Voice ID
    * @returns S3 object key
@@ -49,8 +45,7 @@ export class S3Uploader {
       .toLowerCase();
 
     const prefix = this.config.pathPrefix || 'audio';
-    // Include branch name: audio/{branch}/{slug}/{voiceId}.mp3
-    return `${prefix}/${this.branch}/${slug}/${voiceId}.mp3`;
+    return `${prefix}/${slug}/${voiceId}.mp3`;
   }
 
   /**
@@ -72,8 +67,6 @@ export class S3Uploader {
       Key: key,
       Body: audioBuffer,
       ContentType: 'audio/mpeg',
-      // ACL is deprecated in newer S3 implementations
-      // Use bucket policies instead for public access
     });
 
     await this.client.send(command);
@@ -106,9 +99,7 @@ export class S3Uploader {
 
 /**
  * Create an S3 uploader instance
- * @param config - S3 configuration
- * @param branch - Git branch name (for path prefix)
  */
-export function createS3Uploader(config: S3Config, branch: string = 'main'): S3Uploader {
-  return new S3Uploader(config, branch);
+export function createS3Uploader(config: S3Config): S3Uploader {
+  return new S3Uploader(config);
 }

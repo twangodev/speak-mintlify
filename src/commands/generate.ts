@@ -15,7 +15,6 @@ import { createFishAudioClient } from '../core/fish-api.js';
 import { createS3Uploader } from '../core/s3-upload.js';
 import { injectAudioComponent, extractExistingAudioData } from '../core/injector.js';
 import { findMDXFiles, readFile, writeFile } from '../core/utils.js';
-import { getCurrentBranch } from '../core/git-utils.js';
 
 /**
  * Generate TTS audio for documentation files
@@ -30,10 +29,6 @@ export async function generateCommand(
     // Resolve configuration from CLI options, environment variables, and YAML
     const config = await resolveConfig(options, directory);
 
-    // Get current git branch for S3 path organization
-    const gitBranch = await getCurrentBranch(directory);
-    spinner.text = `Detected git branch: ${gitBranch}`;
-
     // Initialize clients
     spinner.text = 'Initializing Fish Audio client...';
     const fishClient = createFishAudioClient(config.fishApiKey);
@@ -47,7 +42,7 @@ export async function generateCommand(
       secretAccessKey: config.s3SecretAccessKey,
       publicUrl: config.s3PublicUrl,
       pathPrefix: config.s3PathPrefix,
-    }, gitBranch);
+    });
 
     // Find MDX files
     spinner.text = 'Finding MDX files...';
@@ -134,11 +129,11 @@ export async function generateCommand(
             .join('-')
             .toLowerCase();
 
-          // Create mock voice data for preview with actual public URL (including branch)
+          // Create mock voice data for preview with actual public URL
           const mockVoices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
             id,
             name: config.voiceNames[idx] || `Voice ${idx + 1}`,
-            url: `${config.s3PublicUrl.replace(/\/$/, '')}/${config.s3PathPrefix}/${gitBranch}/${slug}/${id}.mp3`,
+            url: `${config.s3PublicUrl.replace(/\/$/, '')}/${config.s3PathPrefix}/${slug}/${id}.mp3`,
           }));
 
           // Generate what the component would look like
