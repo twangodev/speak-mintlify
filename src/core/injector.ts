@@ -134,10 +134,10 @@ async function findInsertionPoints(content: string): Promise<{ importPos: number
       }
     }
 
-    // Find first actual content node (heading, paragraph, etc.)
+    // Find first actual content node (heading, paragraph, or MDX component)
     if (
       !firstContentLine &&
-      (node.type === 'heading' || node.type === 'paragraph') &&
+      (node.type === 'heading' || node.type === 'paragraph' || node.type === 'mdxJsxFlowElement') &&
       node.position?.start?.line
     ) {
       firstContentLine = node.position.start.line;
@@ -185,16 +185,32 @@ export async function injectAudioComponent(
   const importStatement = `import { ${componentName} } from '${componentImport}';`;
   const hasImport = lines.some(line => line.includes(`import { ${componentName} }`));
 
-  // Check if component already exists - update it
+  // Check if component already exists
   if (hasAudioComponent(mdxContent, componentName)) {
+    // Check if component is correctly placed (not nested in another component)
+    // by looking for it at the top level after imports
     const lines = mdxContent.split('\n');
+    let inOtherComponent = false;
     let componentStart = -1;
     let componentEnd = -1;
     let hashLine = -1;
+    let lastImportLine = -1;
 
-    // Find hash comment and component boundaries
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
+      const line = lines[i]!.trim();
+
+      // Track imports
+      if (line.startsWith('import ')) {
+        lastImportLine = i;
+      }
+
+      // Track if we're inside another component
+      if (line.match(/^<[A-Z]\w+/) && !line.includes(`<${componentName}`)) {
+        inOtherComponent = true;
+      }
+      if (inOtherComponent && line.match(/^<\/[A-Z]\w+/)) {
+        inOtherComponent = false;
+      }
 
       // Find hash comment
       if (line.includes('speak-mintlify-hash:')) {
@@ -202,40 +218,40 @@ export async function injectAudioComponent(
       }
 
       // Find component start
-      if (line.includes(`<${componentName}`)) {
+      if (lines[i]!.includes(`<${componentName}`)) {
         componentStart = i;
       }
 
-      // Find component end (self-closing tag)
-      if (componentStart >= 0 && line.includes('/>')) {
+      // Find component end
+      if (componentStart >= 0 && lines[i]!.includes('/>')) {
         componentEnd = i;
         break;
       }
     }
 
-    // Build replacement
-    const voicesFormatted = JSON.stringify(voices, null, 2)
-      .split('\n')
-      .map((line, idx) => (idx === 0 ? line : '  ' + line))
-      .join('\n');
-
-    const newHashComment = `{/* speak-mintlify-hash: ${hash} */}`;
-    const newComponent = `<${componentName} voices={${voicesFormatted}} />`;
-
-    // Remove old hash if exists
-    if (hashLine >= 0) {
-      lines.splice(hashLine, 1);
-      if (componentStart > hashLine) componentStart--;
-      if (componentEnd > hashLine) componentEnd--;
-    }
-
-    // Replace component
+    // If component is nested, remove it and re-insert at correct position
     if (componentStart >= 0 && componentEnd >= 0) {
-      const numLinesToRemove = componentEnd - componentStart + 1;
-      lines.splice(componentStart, numLinesToRemove, newHashComment, newComponent);
-    }
+      // Remove old hash and component
+      if (hashLine >= 0 && hashLine < componentStart) {
+        lines.splice(hashLine, componentEnd - hashLine + 1);
+      } else {
+        lines.splice(componentStart, componentEnd - componentStart + 1);
+      }
 
-    return lines.join('\n');
+      // Re-insert at correct position (after imports)
+      const insertPos = lastImportLine + 1;
+      const voicesFormatted = JSON.stringify(voices, null, 2)
+        .split('\n')
+        .map((line, idx) => (idx === 0 ? line : '  ' + line))
+        .join('\n');
+
+      const newHashComment = `{/* speak-mintlify-hash: ${hash} */}`;
+      const newComponent = `<${componentName} voices={${voicesFormatted}} />`;
+
+      lines.splice(insertPos, 0, '', newHashComment, newComponent);
+
+      return lines.join('\n');
+    }
   }
 
   // Find insertion points using AST
