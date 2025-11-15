@@ -82,14 +82,14 @@ export interface ProcessingResult {
  */
 export interface GenerateOptions {
   apiKey?: string;
-  voices: string;
+  voices?: string; // Optional - can come from speaker-config.yaml
   voiceNames?: string;
-  s3Bucket: string;
+  s3Bucket?: string; // Optional - can come from speaker-config.yaml
   s3Region?: string;
   s3Endpoint?: string;
   s3AccessKeyId?: string;
   s3SecretAccessKey?: string;
-  s3PublicUrl: string;
+  s3PublicUrl?: string; // Optional - can come from speaker-config.yaml
   s3PathPrefix?: string;
   componentImport?: string;
   componentName?: string;

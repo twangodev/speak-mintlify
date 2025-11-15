@@ -9,6 +9,7 @@ import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
+import { visit, SKIP } from 'unist-util-visit';
 import type { Root, Node } from 'mdast';
 import type { Voice } from '../types/index.js';
 
@@ -38,7 +39,7 @@ export async function extractExistingAudioData(
   let foundHash: string | null = null;
   let foundVoices: Voice[] = [];
 
-  function visit(node: any) {
+  function walkTree(node: any) {
     // Look for MDX comments with hash {/* speak-mintlify-hash: abc123 */}
     if (node.type === 'mdxFlowExpression' || node.type === 'mdxTextExpression') {
       const value = node.value || '';
@@ -78,12 +79,12 @@ export async function extractExistingAudioData(
     // Recursively visit children
     if (node.children && Array.isArray(node.children)) {
       for (const child of node.children) {
-        visit(child);
+        walkTree(child);
       }
     }
   }
 
-  visit(ast);
+  walkTree(ast);
 
   if (foundVoices.length > 0) {
     return {
@@ -118,7 +119,7 @@ async function findInsertionPoints(content: string): Promise<{ importPos: number
   let lastImportEndLine = 0;
   let firstContentLine = 0;
 
-  function visit(node: any) {
+  function walkTree(node: any) {
     // Find frontmatter end
     if (node.type === 'yaml' || node.type === 'toml') {
       if (node.position?.end?.line) {
@@ -145,12 +146,12 @@ async function findInsertionPoints(content: string): Promise<{ importPos: number
     // Recursively visit children
     if (node.children && Array.isArray(node.children)) {
       for (const child of node.children) {
-        visit(child);
+        walkTree(child);
       }
     }
   }
 
-  visit(ast);
+  walkTree(ast);
 
   // Import position: after last import, or after frontmatter
   const importPos = lastImportEndLine > 0 ? lastImportEndLine : frontmatterEndLine;
@@ -186,26 +187,55 @@ export async function injectAudioComponent(
 
   // Check if component already exists - update it
   if (hasAudioComponent(mdxContent, componentName)) {
-    // Remove old hash comment if exists (MDX-style)
-    let content = mdxContent.replace(/\{\/\*\s*speak-mintlify-hash:\s*[a-f0-9]+\s*\*\/\}\n?/g, '');
+    const lines = mdxContent.split('\n');
+    let componentStart = -1;
+    let componentEnd = -1;
+    let hashLine = -1;
 
-    // Update component with new voices
-    const componentRegex = new RegExp(
-      `<${componentName}\\s+voices=\\{[^}]+\\}\\s*\\/>`,
-      'g'
-    );
+    // Find hash comment and component boundaries
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
 
+      // Find hash comment
+      if (line.includes('speak-mintlify-hash:')) {
+        hashLine = i;
+      }
+
+      // Find component start
+      if (line.includes(`<${componentName}`)) {
+        componentStart = i;
+      }
+
+      // Find component end (self-closing tag)
+      if (componentStart >= 0 && line.includes('/>')) {
+        componentEnd = i;
+        break;
+      }
+    }
+
+    // Build replacement
     const voicesFormatted = JSON.stringify(voices, null, 2)
       .split('\n')
       .map((line, idx) => (idx === 0 ? line : '  ' + line))
       .join('\n');
 
-    content = content.replace(
-      componentRegex,
-      `{/* speak-mintlify-hash: ${hash} */}\n<${componentName} voices={${voicesFormatted}} />`
-    );
+    const newHashComment = `{/* speak-mintlify-hash: ${hash} */}`;
+    const newComponent = `<${componentName} voices={${voicesFormatted}} />`;
 
-    return content;
+    // Remove old hash if exists
+    if (hashLine >= 0) {
+      lines.splice(hashLine, 1);
+      if (componentStart > hashLine) componentStart--;
+      if (componentEnd > hashLine) componentEnd--;
+    }
+
+    // Replace component
+    if (componentStart >= 0 && componentEnd >= 0) {
+      const numLinesToRemove = componentEnd - componentStart + 1;
+      lines.splice(componentStart, numLinesToRemove, newHashComment, newComponent);
+    }
+
+    return lines.join('\n');
   }
 
   // Find insertion points using AST

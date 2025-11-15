@@ -25,9 +25,9 @@ program
   .command('generate')
   .description('Generate TTS audio for MDX documentation files')
   .argument('[directory]', 'Directory containing MDX files', '.')
-  .requiredOption(
+  .option(
     '--voices <ids>',
-    'Comma-separated list of Fish Audio voice IDs (e.g., "voice1,voice2,voice3")'
+    'Comma-separated list of Fish Audio voice IDs (or use speaker-config.yaml)'
   )
   .option(
     '--voice-names <names>',

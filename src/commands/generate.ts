@@ -10,13 +10,7 @@ import * as Diff from 'diff';
 import type { GenerateOptions, ProcessingResult, Voice } from '../types/index.js';
 import { resolveConfig } from '../core/config.js';
 import { extractCleanText } from '../core/extractor.js';
-import {
-  generateHash,
-  loadMetadata,
-  saveMetadata,
-  hasContentChanged,
-  updateMetadata,
-} from '../core/hash-tracker.js';
+import { generateHash } from '../core/hash-tracker.js';
 import { createFishAudioClient } from '../core/fish-api.js';
 import { createS3Uploader } from '../core/s3-upload.js';
 import { injectAudioComponent, extractExistingAudioData } from '../core/injector.js';
@@ -33,8 +27,8 @@ export async function generateCommand(
   const spinner = ora('Initializing...').start();
 
   try {
-    // Resolve configuration from CLI options and environment variables
-    const config = resolveConfig(options);
+    // Resolve configuration from CLI options, environment variables, and YAML
+    const config = await resolveConfig(options, directory);
 
     // Get current git branch for S3 path organization
     const gitBranch = await getCurrentBranch(directory);
@@ -65,9 +59,6 @@ export async function generateCommand(
     }
 
     spinner.succeed(chalk.green(`Found ${files.length} MDX file(s)`));
-
-    // Load metadata
-    const metadata = await loadMetadata(directory);
 
     // Process each file
     const results: ProcessingResult[] = [];
@@ -215,9 +206,6 @@ export async function generateCommand(
         // Write updated file
         await writeFile(filePath, updatedContent);
 
-        // Update metadata
-        updateMetadata(metadata, file, hash, voices);
-
         fileSpinner.succeed(
           chalk.green(`✓ Generated TTS for ${chalk.cyan(file)}`)
         );
@@ -238,11 +226,6 @@ export async function generateCommand(
           error: error.message,
         });
       }
-    }
-
-    // Save metadata
-    if (!config.dryRun) {
-      await saveMetadata(directory, metadata);
     }
 
     // Print summary
