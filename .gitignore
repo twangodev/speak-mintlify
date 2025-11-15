@@ -131,3 +131,6 @@ dist
 .pnp.*
 
 .idea/
+
+# Speak Mintlify
+.audio-metadata.json

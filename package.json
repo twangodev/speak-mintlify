@@ -35,16 +35,27 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.932.0",
+    "@types/js-yaml": "^4.0.9",
     "axios": "^1.13.2",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
+    "diff": "^8.0.2",
+    "fish-audio": "^0.0.3",
+    "glob": "^11.0.3",
     "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.1",
     "ora": "^9.0.0",
     "p-retry": "^7.1.0",
     "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
     "remark-mdx": "^3.1.1",
+    "remark-mdx-remove-esm": "^1.2.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "unified": "^11.0.5"
+    "remark-unlink": "^5.0.0",
+    "simple-git": "^3.30.0",
+    "strip-markdown": "^6.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0"
   }
 }

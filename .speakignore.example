@@ -1,0 +1,14 @@
+# .speakignore
+# Exclude files/folders from TTS generation (uses gitignore syntax)
+
+# Common Mintlify excludes
+snippets/**
+api-reference/**
+
+# Drafts and internal docs
+drafts/**
+internal/**
+
+# Meta files
+README.mdx
+CONTRIBUTING.mdx
