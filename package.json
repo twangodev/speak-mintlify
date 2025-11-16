@@ -1,11 +1,19 @@
 {
   "name": "speak-mintlify",
   "version": "1.1.0",
-  "description": "CLI tool to generate TTS audio for documentation using Fish Audio",
+  "description": "Automatically generate voice for your Mintlify documentation.",
   "main": "dist/cli.js",
   "type": "module",
   "bin": {
     "speak-mintlify": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "directories": {
     "test": "tests"
@@ -20,13 +28,31 @@
     "type": "git",
     "url": "git+https://github.com/twangodev/speak-mintlify.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "voice",
+    "audio",
+    "narration",
+    "mintlify",
+    "documentation",
+    "docs",
+    "mdx",
+    "fish-audio",
+    "s3",
+    "cloudflare-r2",
+    "cli",
+    "accessibility",
+    "a11y",
+    "developer-tools",
+    "devtools"
+  ],
+  "author": "twangodev",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/twangodev/speak-mintlify/issues"
   },
-  "homepage": "https://github.com/twangodev/speak-mintlify#readme",
+  "homepage": "https://docs.fish.audio",
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@vercel/ncc": "^0.38.4",
