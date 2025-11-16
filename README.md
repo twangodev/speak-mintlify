@@ -137,7 +137,7 @@ npx speak-mintlify cleanup . --dry-run
 
 Exclude files from processing by creating `.speakignore` in your repository root:
 
-```
+```text
 snippets/**
 api-reference/**
 temp/**
