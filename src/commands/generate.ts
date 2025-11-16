@@ -7,8 +7,9 @@ import path from 'path';
 import ora from 'ora';
 import chalk from 'chalk';
 import * as Diff from 'diff';
-import type { GenerateOptions, ProcessingResult, Voice } from '../types/index.js';
+import type { GenerateOptions, ProcessingResult } from '../types/index.js';
 import { resolveConfig } from '../core/config.js';
+import { validateGenerateConfig } from '../core/validators.js';
 import { extractCleanText } from '../core/extractor.js';
 import { generateHash } from '../core/hash-tracker.js';
 import { createFishAudioClient } from '../core/fish-api.js';
@@ -29,9 +30,11 @@ export async function generateCommand(
     // Resolve configuration from CLI options, environment variables, and YAML
     const config = await resolveConfig(options, directory);
 
+    validateGenerateConfig(config);
+
     // Initialize clients
     spinner.text = 'Initializing Fish Audio client...';
-    const fishClient = createFishAudioClient(config.fishApiKey);
+    const fishClient = createFishAudioClient(config.fishApiKey!);
 
     spinner.text = 'Initializing S3 uploader...';
     const s3Uploader = createS3Uploader({
@@ -102,8 +105,8 @@ export async function generateCommand(
         if (existingData) {
           const hashMatches = existingData.hash === hash;
           const voicesMatch =
-            existingData.voiceIds.length === config.voiceIds.length &&
-            config.voiceIds.every(id => existingData.voiceIds.includes(id));
+            existingData.voiceIds.length === config.voiceIds!.length &&
+            config.voiceIds!.every(id => existingData.voiceIds.includes(id));
 
           if (hashMatches && voicesMatch) {
             fileSpinner.info(
@@ -130,9 +133,9 @@ export async function generateCommand(
             .toLowerCase();
 
           // Create mock voice data for preview with actual public URL
-          const mockVoices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
+          const mockVoices: Array<{ id: string; name: string; url: string }> = config.voiceIds!.map((id, idx) => ({
             id,
-            name: config.voiceNames[idx] || `Voice ${idx + 1}`,
+            name: config.voiceNames![idx] || `Voice ${idx + 1}`,
             url: `${config.s3PublicUrl.replace(/\/$/, '')}/${config.s3PathPrefix}/${slug}/${id}.mp3`,
           }));
 
@@ -174,9 +177,9 @@ export async function generateCommand(
         const audioBuffers = new Map<string, Buffer>();
         const audioUrls = new Map<string, string>();
 
-        for (let i = 0; i < config.voiceIds.length; i++) {
-          const voiceId = config.voiceIds[i]!;
-          const voiceName = config.voiceNames[i] || `Voice ${i + 1}`;
+        for (let i = 0; i < config.voiceIds!.length; i++) {
+          const voiceId = config.voiceIds![i]!;
+          const voiceName = config.voiceNames![i] || `Voice ${i + 1}`;
 
           // Generate TTS
           fileSpinner.text = `Generating TTS for ${chalk.cyan(file)} (${chalk.yellow(voiceName)})...`;
@@ -190,9 +193,9 @@ export async function generateCommand(
         }
 
         // Create voice array with URLs
-        const voices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
+        const voices: Array<{ id: string; name: string; url: string }> = config.voiceIds!.map((id, idx) => ({
           id,
-          name: config.voiceNames[idx] || `Voice ${idx + 1}`,
+          name: config.voiceNames![idx] || `Voice ${idx + 1}`,
           url: audioUrls.get(id) || '',
         }));
 
