@@ -40,9 +40,12 @@ async function loadSpeakerConfig(directory: string): Promise<SpeakerConfig> {
  * Resolved configuration with env var fallbacks
  */
 export interface ResolvedConfig {
-  fishApiKey: string;
-  voiceIds: string[];
-  voiceNames: string[];
+  // Generation specific
+  fishApiKey?: string;
+  voiceIds?: string[];
+  voiceNames?: string[];
+
+  // Required
   s3Bucket: string;
   s3Region: string;
   s3Endpoint?: string;
@@ -68,9 +71,9 @@ export async function resolveConfig(
   // Load YAML config
   const yamlConfig = await loadSpeakerConfig(directory);
 
-  // Parse voice IDs and names with priority: CLI > YAML
-  let voiceIds: string[];
-  let voiceNames: string[];
+  // Parse voice IDs and names with priority: CLI > YAML (optional)
+  let voiceIds: string[] | undefined;
+  let voiceNames: string[] | undefined;
 
   if (options.voices) {
     // From CLI
@@ -82,24 +85,17 @@ export async function resolveConfig(
     // From YAML (map of id -> name)
     voiceIds = Object.keys(yamlConfig.voices);
     voiceNames = Object.values(yamlConfig.voices);
-  } else {
-    throw new Error('Voices must be specified via --voices flag or in speaker-config.yaml');
   }
 
-  if (voiceIds.length !== voiceNames.length) {
-    throw new Error('Number of voice IDs must match number of voice names');
-  }
-
-  // Resolve all config values with priority: CLI > env (no S3 in YAML)
+  // Resolve all config values with priority: CLI > env
   const fishApiKey = options.apiKey || process.env.FISH_API_KEY;
   const s3Bucket = options.s3Bucket || process.env.S3_BUCKET;
   const s3AccessKeyId = options.s3AccessKeyId || process.env.S3_ACCESS_KEY_ID;
   const s3SecretAccessKey = options.s3SecretAccessKey || process.env.S3_SECRET_ACCESS_KEY;
   const s3PublicUrl = options.s3PublicUrl || process.env.S3_PUBLIC_URL;
 
-  // Validate required fields (all from env/CLI only)
+  // Validate only S3 fields (always required)
   const missing: string[] = [];
-  if (!fishApiKey) missing.push('FISH_API_KEY (--api-key or env var)');
   if (!s3Bucket) missing.push('S3_BUCKET (--s3-bucket or env var)');
   if (!s3AccessKeyId) missing.push('S3_ACCESS_KEY_ID (--s3-access-key-id or env var)');
   if (!s3SecretAccessKey) missing.push('S3_SECRET_ACCESS_KEY (--s3-secret-access-key or env var)');
@@ -112,19 +108,21 @@ export async function resolveConfig(
   }
 
   return {
-    // Secrets (CLI > env only)
-    fishApiKey: fishApiKey!,
+    // Optional fields
+    fishApiKey,
+    voiceIds,
+    voiceNames,
+
+    // Always required S3 fields
     s3AccessKeyId: s3AccessKeyId!,
     s3SecretAccessKey: s3SecretAccessKey!,
     s3Bucket: s3Bucket!,
     s3PublicUrl: s3PublicUrl!,
     s3Region: options.s3Region || process.env.S3_REGION || 'us-east-1',
     s3Endpoint: options.s3Endpoint || process.env.S3_ENDPOINT,
-
-    // Non-secrets (CLI > YAML > defaults)
-    voiceIds,
-    voiceNames,
     s3PathPrefix: options.s3PathPrefix || 'audio',
+
+    // Component/pattern config
     componentImport: options.componentImport || yamlConfig.component?.import || '/snippets/audio-transcript.jsx',
     componentName: options.componentName || yamlConfig.component?.name || 'AudioTranscript',
     pattern: options.pattern || '**/*.mdx',

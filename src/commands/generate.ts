@@ -8,13 +8,31 @@ import ora from 'ora';
 import chalk from 'chalk';
 import * as Diff from 'diff';
 import type { GenerateOptions, ProcessingResult, Voice } from '../types/index.js';
-import { resolveConfig } from '../core/config.js';
+import { resolveConfig, type ResolvedConfig } from '../core/config.js';
 import { extractCleanText } from '../core/extractor.js';
 import { generateHash } from '../core/hash-tracker.js';
 import { createFishAudioClient } from '../core/fish-api.js';
 import { createS3Uploader } from '../core/s3-upload.js';
 import { injectAudioComponent, extractExistingAudioData } from '../core/injector.js';
 import { findMDXFiles, readFile, writeFile } from '../core/utils.js';
+
+/**
+ * Validate configuration for generate command
+ * Throws if required fields are missing
+ */
+function validateGenerateConfig(config: ResolvedConfig): void {
+  const missing: string[] = [];
+  if (!config.fishApiKey) missing.push('FISH_API_KEY (--api-key or env var)');
+  if (!config.voiceIds || config.voiceIds.length === 0) {
+    missing.push('Voices (--voices flag or speaker-config.yaml)');
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required configuration:\n  - ${missing.join('\n  - ')}\n\nSet these via CLI flags, environment variables, or speaker-config.yaml.`
+    );
+  }
+}
 
 /**
  * Generate TTS audio for documentation files
@@ -29,9 +47,11 @@ export async function generateCommand(
     // Resolve configuration from CLI options, environment variables, and YAML
     const config = await resolveConfig(options, directory);
 
+    validateGenerateConfig(config);
+
     // Initialize clients
     spinner.text = 'Initializing Fish Audio client...';
-    const fishClient = createFishAudioClient(config.fishApiKey);
+    const fishClient = createFishAudioClient(config.fishApiKey!);
 
     spinner.text = 'Initializing S3 uploader...';
     const s3Uploader = createS3Uploader({
@@ -102,8 +122,8 @@ export async function generateCommand(
         if (existingData) {
           const hashMatches = existingData.hash === hash;
           const voicesMatch =
-            existingData.voiceIds.length === config.voiceIds.length &&
-            config.voiceIds.every(id => existingData.voiceIds.includes(id));
+            existingData.voiceIds.length === config.voiceIds!.length &&
+            config.voiceIds!.every(id => existingData.voiceIds.includes(id));
 
           if (hashMatches && voicesMatch) {
             fileSpinner.info(
@@ -130,9 +150,9 @@ export async function generateCommand(
             .toLowerCase();
 
           // Create mock voice data for preview with actual public URL
-          const mockVoices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
+          const mockVoices: Array<{ id: string; name: string; url: string }> = config.voiceIds!.map((id, idx) => ({
             id,
-            name: config.voiceNames[idx] || `Voice ${idx + 1}`,
+            name: config.voiceNames![idx] || `Voice ${idx + 1}`,
             url: `${config.s3PublicUrl.replace(/\/$/, '')}/${config.s3PathPrefix}/${slug}/${id}.mp3`,
           }));
 
@@ -174,9 +194,9 @@ export async function generateCommand(
         const audioBuffers = new Map<string, Buffer>();
         const audioUrls = new Map<string, string>();
 
-        for (let i = 0; i < config.voiceIds.length; i++) {
-          const voiceId = config.voiceIds[i]!;
-          const voiceName = config.voiceNames[i] || `Voice ${i + 1}`;
+        for (let i = 0; i < config.voiceIds!.length; i++) {
+          const voiceId = config.voiceIds![i]!;
+          const voiceName = config.voiceNames![i] || `Voice ${i + 1}`;
 
           // Generate TTS
           fileSpinner.text = `Generating TTS for ${chalk.cyan(file)} (${chalk.yellow(voiceName)})...`;
@@ -190,9 +210,9 @@ export async function generateCommand(
         }
 
         // Create voice array with URLs
-        const voices: Array<{ id: string; name: string; url: string }> = config.voiceIds.map((id, idx) => ({
+        const voices: Array<{ id: string; name: string; url: string }> = config.voiceIds!.map((id, idx) => ({
           id,
-          name: config.voiceNames[idx] || `Voice ${idx + 1}`,
+          name: config.voiceNames![idx] || `Voice ${idx + 1}`,
           url: audioUrls.get(id) || '',
         }));
 
