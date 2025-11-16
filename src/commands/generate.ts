@@ -7,7 +7,7 @@ import path from 'path';
 import ora from 'ora';
 import chalk from 'chalk';
 import * as Diff from 'diff';
-import type { GenerateOptions, ProcessingResult, Voice } from '../types/index.js';
+import type { GenerateOptions, ProcessingResult } from '../types/index.js';
 import { resolveConfig, type ResolvedConfig } from '../core/config.js';
 import { extractCleanText } from '../core/extractor.js';
 import { generateHash } from '../core/hash-tracker.js';
