@@ -53,9 +53,9 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 
 # S3 Config (required)
 S3_BUCKET=your-bucket
-S3_PUBLIC_URL=https://cdn.example.com
+S3_PUBLIC_URL=https://s3.example.com
 S3_REGION=us-east-1
-S3_ENDPOINT=https://account-id.r2.cloudflarestorage.com
+S3_ENDPOINT=https://s3-endpoint.example.com
 ```
 
 Check out the [.env.example](.env.example) for reference.
