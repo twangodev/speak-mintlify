@@ -97,3 +97,20 @@ export interface GenerateOptions {
   dryRun?: boolean;
   verbose?: boolean;
 }
+
+/**
+ * CLI command options for cleanup command
+ */
+export interface CleanupOptions {
+  s3Bucket?: string;
+  s3Region?: string;
+  s3Endpoint?: string;
+  s3AccessKeyId?: string;
+  s3SecretAccessKey?: string;
+  s3PublicUrl?: string;
+  s3PathPrefix?: string;
+  componentName?: string;
+  pattern?: string;
+  dryRun?: boolean;
+  verbose?: boolean;
+}

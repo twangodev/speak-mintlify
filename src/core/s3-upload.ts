@@ -3,7 +3,12 @@
  * Handles uploads to AWS S3, Cloudflare R2, MinIO, etc.
  */
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
 import type { S3Config } from '../types/index.js';
 
 /**
@@ -94,6 +99,89 @@ export class S3Uploader {
     );
 
     return new Map(results.map((r) => [r.voiceId, r.url]));
+  }
+
+  /**
+   * List all audio files in S3 with the configured prefix
+   * @returns Array of S3 object keys
+   */
+  async listAllAudioFiles(): Promise<string[]> {
+    const prefix = this.config.pathPrefix || 'audio';
+    const allKeys: string[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: this.config.bucket,
+        Prefix: prefix + '/',
+        ContinuationToken: continuationToken,
+      });
+
+      const response = await this.client.send(command);
+
+      if (response.Contents) {
+        allKeys.push(
+          ...response.Contents.map((obj) => obj.Key).filter(
+            (key): key is string => key !== undefined
+          )
+        );
+      }
+
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+
+    return allKeys;
+  }
+
+  /**
+   * Delete multiple files from S3
+   * @param keys - Array of S3 object keys to delete
+   */
+  async deleteMultiple(keys: string[]): Promise<void> {
+    if (keys.length === 0) {
+      return;
+    }
+
+    // S3 allows deleting up to 1000 objects at once
+    const batchSize = 1000;
+
+    for (let i = 0; i < keys.length; i += batchSize) {
+      const batch = keys.slice(i, i + batchSize);
+
+      const command = new DeleteObjectsCommand({
+        Bucket: this.config.bucket,
+        Delete: {
+          Objects: batch.map((key) => ({ Key: key })),
+          Quiet: false,
+        },
+      });
+
+      await this.client.send(command);
+    }
+  }
+
+  /**
+   * Extract S3 key from public URL
+   * @param url - Public URL (e.g., https://cdn.example.com/audio/file/voice.mp3)
+   * @param publicUrl - Public URL base (e.g., https://cdn.example.com)
+   * @returns S3 key (e.g., audio/file/voice.mp3)
+   */
+  extractKeyFromUrl(url: string, publicUrl?: string): string {
+    const baseUrl = (publicUrl || this.config.publicUrl).replace(/\/$/, '');
+
+    // Remove the base URL to get the key
+    if (url.startsWith(baseUrl)) {
+      return url.substring(baseUrl.length + 1); // +1 to remove leading slash
+    }
+
+    // If URL doesn't match base, try to extract just the path
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname.substring(1); // Remove leading slash
+    } catch {
+      // If not a valid URL, return as-is
+      return url;
+    }
   }
 }
 
