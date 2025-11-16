@@ -8,31 +8,14 @@ import ora from 'ora';
 import chalk from 'chalk';
 import * as Diff from 'diff';
 import type { GenerateOptions, ProcessingResult } from '../types/index.js';
-import { resolveConfig, type ResolvedConfig } from '../core/config.js';
+import { resolveConfig } from '../core/config.js';
+import { validateGenerateConfig } from '../core/validators.js';
 import { extractCleanText } from '../core/extractor.js';
 import { generateHash } from '../core/hash-tracker.js';
 import { createFishAudioClient } from '../core/fish-api.js';
 import { createS3Uploader } from '../core/s3-upload.js';
 import { injectAudioComponent, extractExistingAudioData } from '../core/injector.js';
 import { findMDXFiles, readFile, writeFile } from '../core/utils.js';
-
-/**
- * Validate configuration for generate command
- * Throws if required fields are missing
- */
-function validateGenerateConfig(config: ResolvedConfig): void {
-  const missing: string[] = [];
-  if (!config.fishApiKey) missing.push('FISH_API_KEY (--api-key or env var)');
-  if (!config.voiceIds || config.voiceIds.length === 0) {
-    missing.push('Voices (--voices flag or speaker-config.yaml)');
-  }
-
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required configuration:\n  - ${missing.join('\n  - ')}\n\nSet these via CLI flags, environment variables, or speaker-config.yaml.`
-    );
-  }
-}
 
 /**
  * Generate TTS audio for documentation files

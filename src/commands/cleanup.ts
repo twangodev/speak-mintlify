@@ -7,6 +7,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import type { CleanupOptions } from '../types/index.js';
 import { resolveConfig } from '../core/config.js';
+import { validateCleanupConfig } from '../core/validators.js';
 import { createS3Uploader } from '../core/s3-upload.js';
 import { extractExistingAudioData } from '../core/injector.js';
 import { findMDXFiles, readFile } from '../core/utils.js';
@@ -23,6 +24,8 @@ export async function cleanupCommand(
   try {
     // Resolve configuration (only S3-related options needed)
     const config = await resolveConfig(options, directory);
+
+    validateCleanupConfig(config);
 
     // Initialize S3 uploader
     spinner.text = 'Initializing S3 client...';
