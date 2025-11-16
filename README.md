@@ -5,7 +5,9 @@
 [![npm downloads](https://img.shields.io/npm/dm/speak-mintlify)](https://www.npmjs.com/package/speak-mintlify)
 [![License](https://img.shields.io/github/license/twangodev/speak-mintlify)](LICENSE)
 
-Automatically generate high-quality text-to-speech audio for your Mintlify documentation. Add voice narration to your docs to drive developer engagement and accessibility.
+**_Add voice narration to your documentation to drive developer engagement and accessibility._**
+
+`speak-mintlify` intelligently generates text-to-speech audio for your Mintlify documentation. 
 
 ## Features
 
@@ -98,6 +100,12 @@ If your documentation is within a subdirectory, specify the path accordingly (e.
 
 You may want to preview changes first using the `--dry-run` flag.
 
+### 5. Integrate with CI/CD
+
+Once you are satisfied with the setup, integrate `speak-mintlify` into your CI/CD pipeline to automate audio generation on content updates.
+
+Check out how [Fish Audio](https://docs.fish.audio) integrates with GitHub Actions over at their [repository](https://github.com/fishaudio/docs/blob/main/.github/workflows/tts.yaml).
+
 ## Commands
 
 ### `generate` - Generate TTS audio
@@ -135,3 +143,9 @@ api-reference/**
 temp/**
 drafts/**
 ```
+
+## About Fish Audio
+
+`speak-mintlify` is built with [Fish Audio](https://fish.audio) for its affordable, high-quality, natural-sounding
+voices. Other providers can be expensive and difficult to use at scale. Fish Audio makes it easy to add voice narration
+to your documentation without breaking the bank.
