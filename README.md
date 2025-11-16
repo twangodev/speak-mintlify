@@ -5,26 +5,21 @@
 [![npm downloads](https://img.shields.io/npm/dm/speak-mintlify)](https://www.npmjs.com/package/speak-mintlify)
 [![License](https://img.shields.io/github/license/twangodev/speak-mintlify)](LICENSE)
 
-Generate high-quality text-to-speech audio for Mintlify documentation using Fish Audio.
+Automatically generate high-quality text-to-speech audio for your Mintlify documentation. Add voice narration to your docs to drive developer engagement and accessibility.
 
 ## Features
 
-- Automatic TTS generation for MDX documentation
-- Smart caching (hash-based, skips unchanged content)
-- Multiple voices per page
-- S3-compatible storage (AWS S3, Cloudflare R2, MinIO)
-- Simple configuration with `speaker-config.yaml`
-
-## Quick Start
-
-```bash
-# Run from your docs repository root
-npx speak-mintlify generate .
-```
+- Generate TTS audio directly from your MDX file, only regenerating when content changes
+- Supports multiple voices with easy configuration
+- Upload your audio files to S3 (compatible with Cloudflare R2, MinIO, etc.)
+- Inject audio player components into your documentation
+- Ready to integrate with CI/CD pipelines
 
 ## Setup
 
-### 1. Create `speaker-config.yaml` in your repository root
+### 1. Initialize `speaker-config.yaml`
+
+`speaker-config.yaml` holds your voice configuration and optional component settings. 
 
 ```yaml
 # speaker-config.yaml
@@ -33,11 +28,7 @@ npx speak-mintlify generate .
 # Voice Configuration (map of voice ID -> display name)
 voices:
   8ef4a238714b45718ce04243307c57a7: E-girl
-  802e3bc2b27e49c2995d23ef70e6ac89: Energetic Male
-  933563129e564b19a115bedd57b7406a: Sarah
   bf322df2096a46f18c579d0baa36f41d: Adrian
-  b347db033a6549378b48d00acb0d06cd: Selene
-  536d3a5e000945adb7038665781a4aca: Ethan
   # Add more voices as needed
 
 # Component Configuration (optional)
@@ -46,7 +37,11 @@ component:
   name: AudioTranscript
 ```
 
-### 2. Create `.env` for secrets (never commit)
+You can reference our example [speaker-config.yaml](speaker-config.yaml) for more details.
+
+### 2. Configure Environment Variables
+
+You can set environment variables in a `.env` file at your repository root or directly in your CI/CD environment.
 
 ```env
 # Secrets (required)
@@ -59,108 +54,84 @@ S3_BUCKET=your-bucket
 S3_PUBLIC_URL=https://cdn.example.com
 S3_REGION=us-east-1
 S3_ENDPOINT=https://account-id.r2.cloudflarestorage.com
-
-# Configure voices in speaker-config.yaml
 ```
 
-### 3. Run the CLI
+Check out the [.env.example](.env.example) for reference.
+
+### 3. Create Audio Component
+
+In your MDX files, import the audio component specified in your `speaker-config.yaml`:
+
+Your audio component will need to accept the following props:
+
+```typescript
+{
+  voices: Array<{
+    name: string;    // Display name for the voice
+    url: string;     // Audio file URL (S3 or any accessible URL)
+  }>
+}
+```
+
+**Example:**
+```jsx
+<AudioTranscript
+  voices={[
+    { name: "Natural Voice", url: "https://s3.../audio1.mp3" },
+    { name: "Professional Voice", url: "https://s3.../audio2.mp3" }
+  ]}
+/>
+```
+
+Feel free to get started with our [audio-transcript.jsx](audio-transcript.jsx) file and customize it to fit your design.
+
+### 4. Run the Generator
+
+Once you have configured everything, run the generator on your documentation directory:
 
 ```bash
 # From your docs repository root
 npx speak-mintlify generate .
 ```
 
-## How It Works
+If your documentation is within a subdirectory, specify the path accordingly (e.g., `npx speak-mintlify generate ./docs`).
 
-1. Finds all `.mdx` files (respects `.speakignore`)
-2. Extracts clean text (removes code, tables, components, URLs)
-3. Generates SHA-256 hash and checks if content changed
-4. Calls Fish Audio API for each voice
-5. Uploads MP3s to S3
-6. Injects `<AudioTranscript>` component with hash comment
+You may want to preview changes first using the `--dry-run` flag.
 
-**Example output:**
+## Commands
 
-```mdx
----
-title: Getting Started
----
-import { AudioTranscript } from '/snippets/audio-transcript.jsx';
-
-{/* speak-mintlify-hash: abc123def456... */}
-<AudioTranscript voices={[
-  {
-    "id": "8ef4a238714b45718ce04243307c57a7",
-    "name": "E-girl",
-    "url": "https://cdn.example.com/audio/getting-started-intro/model_id.mp3"
-  }
-]} />
-
-## Quick Start
-...
-```
-
-## Configuration
-
-### Priority Order
-
-1. CLI flags (highest)
-2. Environment variables (`.env`)
-3. `speaker-config.yaml`
-4. Defaults (lowest)
-
-### CLI Options
+### `generate` - Generate TTS audio
 
 ```bash
-npx speak-mintlify generate [directory] [options]
+npx speak-mintlify generate [directory]
 
-Options:
-  --voices <ids>              Voice IDs (or use speaker-config.yaml)
-  --voice-names <names>       Voice names
-  --api-key <key>             Fish API key (or use FISH_API_KEY)
-  --s3-bucket <bucket>        S3 bucket (or use S3_BUCKET)
-  --s3-public-url <url>       CDN URL (or use S3_PUBLIC_URL)
-  --s3-region <region>        S3 region (default: us-east-1)
-  --s3-endpoint <url>         S3 endpoint for R2/MinIO
-  --s3-access-key-id <key>    S3 access key
-  --s3-secret-access-key <k>  S3 secret key
-  --pattern <glob>            File pattern (default: **/*.mdx)
-  --dry-run                   Preview changes without generating
-  --verbose                   Show extracted text and details
+# Useful flags:
+#   --dry-run       Preview changes without generating
+#   --verbose       Show extracted text and details
+#   --pattern       File pattern (default: **/*.mdx)
+
+# Run with --help to see all options
+npx speak-mintlify generate --help
 ```
 
-### `.speakignore` (optional)
+### `cleanup` - Remove orphaned audio files
 
-Create `.speakignore` in your repository root to exclude files:
+Removes audio files from S3 that are no longer referenced in your MDX files.
+
+```bash
+npx speak-mintlify cleanup [directory]
+
+# Preview before deleting
+npx speak-mintlify cleanup . --dry-run
+```
+
+### `.speakignore`
+
+Exclude files from processing by creating `.speakignore` in your repository root:
 
 ```
 snippets/**
 api-reference/**
 temp/**
 drafts/**
-```
-
-## Examples
-
-### Dry Run (Preview)
-
-```bash
-# Preview what would be generated
-npx speak-mintlify generate . --dry-run --verbose
-```
-
-### Specific Files
-
-```bash
-# Only process files in a subdirectory
-npx speak-mintlify generate . --pattern "guides/**/*.mdx"
-```
-
-### Override Voices
-
-```bash
-# Override voices from speaker-config.yaml
-npx speak-mintlify generate . \
-  --voices "voice-id-1,voice-id-2" \
-  --voice-names "Male,Female"
 ```
