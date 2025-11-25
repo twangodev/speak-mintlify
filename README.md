@@ -85,7 +85,7 @@ Your audio component will need to accept the following props:
 />
 ```
 
-Feel free to get started with our [audio-transcript.jsx](audio-transcript.jsx) file and customize it to fit your design.
+Customize the provided [audio-transcript.jsx](audio-transcript.jsx) file to fit your design.
 
 ### 4. Run the Generator
 
