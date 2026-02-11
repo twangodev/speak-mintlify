@@ -3,6 +3,18 @@ name: Node.js
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: Release type
+        required: true
+        default: build-only
+        type: choice
+        options:
+          - build-only
+          - patch
+          - minor
+          - major
 
 jobs:
   build:
@@ -17,20 +29,29 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
-  publish:
+  release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' && inputs.release-type != 'build-only'
     environment: npm
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: fregante/setup-git-user@v2
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run build
-      - run: npm publish
+      - name: Release
+        run: npx release-it --ci ${{ inputs.release-type }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Publish to npm
+        run: npm publish --provenance --access public
