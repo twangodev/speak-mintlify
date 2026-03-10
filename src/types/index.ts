@@ -94,6 +94,7 @@ export interface GenerateOptions {
   componentImport?: string;
   componentName?: string;
   pattern?: string;
+  force?: boolean;
   dryRun?: boolean;
   verbose?: boolean;
 }

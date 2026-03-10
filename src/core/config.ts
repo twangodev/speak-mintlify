@@ -56,6 +56,7 @@ export interface ResolvedConfig {
   componentImport: string;
   componentName: string;
   pattern: string;
+  force: boolean;
   dryRun: boolean;
   verbose: boolean;
 }
@@ -126,6 +127,7 @@ export async function resolveConfig(
     componentImport: options.componentImport || yamlConfig.component?.import || '/snippets/audio-transcript.jsx',
     componentName: options.componentName || yamlConfig.component?.name || 'AudioTranscript',
     pattern: options.pattern || '**/*.mdx',
+    force: options.force || false,
     dryRun: options.dryRun || false,
     verbose: options.verbose || false,
   };
