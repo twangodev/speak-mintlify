@@ -101,8 +101,8 @@ export async function generateCommand(
         // Check if file already has audio component with hash
         const existingData = await extractExistingAudioData(content, config.componentName);
 
-        // If component exists with matching hash and voice IDs, skip
-        if (existingData) {
+        // If component exists with matching hash and voice IDs, skip (unless --force)
+        if (existingData && !config.force) {
           const hashMatches = existingData.hash === hash;
           const voicesMatch =
             existingData.voiceIds.length === config.voiceIds!.length &&

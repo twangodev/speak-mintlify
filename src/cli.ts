@@ -83,6 +83,7 @@ program
     'Glob pattern for MDX files to process',
     '**/*.mdx'
   )
+  .option('--force', 'Force regeneration even if content is unchanged', false)
   .option('--dry-run', 'Simulate without making actual changes', false)
   .option('--verbose', 'Show detailed processing information', false)
   .action(async (directory: string, options: GenerateOptions) => {
