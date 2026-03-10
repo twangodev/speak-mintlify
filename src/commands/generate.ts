@@ -98,8 +98,10 @@ export async function generateCommand(
           fileSpinner.start();
         }
 
-        // Check if file already has audio component with hash
-        const existingData = await extractExistingAudioData(content, config.componentName);
+        // Check if file already has audio component with hash (skip when --force)
+        const existingData = !config.force
+          ? await extractExistingAudioData(content, config.componentName)
+          : null;
 
         // If component exists with matching hash and voice IDs, skip (unless --force)
         if (existingData && !config.force) {
